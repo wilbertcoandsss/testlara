@@ -1,35 +1,54 @@
 services:
+  # Service 1: Aplikasi Laravel (Pure PHP 8.4)
   app:
-    build: .
-    container_name: laravel_app
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: laravel-app
+    container_name: laravel-app
     restart: unless-stopped
+    working_dir: /var/www/html
     volumes:
-      - .:/var/www/html
+      - ./:/var/www/html
       - /var/www/html/vendor
     depends_on:
       - db
+    networks:
+      - laravel
 
+  # Service 2: Web Server (Nginx)
   nginx:
     image: nginx:alpine
-    container_name: laravel_nginx
+    container_name: laravel-nginx
     restart: unless-stopped
     ports:
       - "80:80"
     volumes:
-      - .:/var/www/html
-      - ./docker/nginx/default.conf:/etc/nginx/conf.d/default.conf
+      - ./:/var/www/html
+      - ./nginx/conf.d/:/etc/nginx/conf.d/
     depends_on:
       - app
+    networks:
+      - laravel
 
+  # Service 3: Database MySQL 8.0
   db:
     image: mysql:8.0
-    container_name: laravel_db
+    container_name: laravel-db
     restart: unless-stopped
     environment:
       MYSQL_DATABASE: ${DB_DATABASE}
       MYSQL_ROOT_PASSWORD: ${DB_PASSWORD}
+      MYSQL_USER: ${DB_USERNAME}
+      MYSQL_PASSWORD: ${DB_PASSWORD}
     volumes:
-      - mysql_data:/var/lib/mysql
+      - dbdata:/var/lib/mysql
+    networks:
+      - laravel
+
+networks:
+  laravel:
+    driver: bridge
 
 volumes:
-  mysql_data:
+  dbdata:
